@@ -1,2 +1,3 @@
 numpy
 pyvirtualcam
+opencv-python
