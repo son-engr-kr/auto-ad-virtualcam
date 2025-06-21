@@ -11,7 +11,8 @@ if __name__ == "__main__":
     print(f"Camera resolution: {width}x{height}")
 
 
-    frame_handler = FrameHandler()
+    frame_handler = FrameHandler(width, height)
+    frame_handler.change_background("likelion_hackathon.png")
 
     with pyvirtualcam.Camera(width=width, height=height, fps=20) as cam:
         print(f'Using virtual camera: {cam.device}')
