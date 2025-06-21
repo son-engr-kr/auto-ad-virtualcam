@@ -115,16 +115,41 @@ class FrameHandler:
         # Combine masks to ensure both face and body are kept.
         combined_mask = cv2.bitwise_or(face_mask, person_mask)
 
-        mask_3 = cv2.cvtColor(combined_mask, cv2.COLOR_GRAY2BGR)
-        inv_mask_3 = cv2.bitwise_not(mask_3)
-
-        # Compose foreground and green background.
+        # Compose foreground and green background with smooth edge blending.
         green_bg = np.full_like(frame, (0, 255, 0))
-        fg = cv2.bitwise_and(frame, mask_3)
-        bg = cv2.bitwise_and(green_bg, inv_mask_3)
-        return cv2.add(fg, bg)
+
+        # Distance-transform feathering via helper.
+        blended = self.blend_smooth_fg_bg(frame, green_bg, combined_mask, feather_px=8)
+        return blended
+
+    def blend_smooth_fg_bg(self, fg, bg, binary_mask, feather_px=20):
+        """
+        Blend fg over bg using a distance-transform based soft alpha.
+
+        Args:
+            fg, bg : BGR images (same size)
+            binary_mask : uint8 0/255 mask of fg region
+            feather_px : width of the soft edge
+        Returns:
+            blended BGR image
+        """
+        # 1. Compute distance to the nearest 0-pixel (background)
+        dist = cv2.distanceTransform(binary_mask, cv2.DIST_L2, 5)
+
+        # 2. Clip & normalize
+        alpha = np.clip(dist / feather_px, 0, 1)
+        alpha = cv2.cvtColor(alpha, cv2.COLOR_GRAY2BGR)  # to 3-ch
+
+        # 3. Convert to float32
+        fg_f = fg.astype(np.float32)
+        bg_f = bg.astype(np.float32)
+
+        # 4. Alpha blend
+        out = fg_f * alpha + bg_f * (1 - alpha)
+        return out.astype(np.uint8)
 
     # --------------------------- compatibility --------------------------- #
     def handle_frame(self, frame: np.ndarray) -> np.ndarray:
         """Default behaviour kept for backward compatibility (face extraction)."""
         return self.make_background(frame)
+
