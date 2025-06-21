@@ -171,6 +171,8 @@ class SpeechRecognitionThread(QThread):
                             # Recognize speech
                             recognized_text = self.recognizer.recognize_google(audio)
 
+                            recognized_text = "I'm a startup founder, and I'm looking for a company to invest in."
+
                             # TODO: send and get result from LLM here
                             llm_result = self.llm_api_handler.request(recognized_text)
                             # TODO: signal to camera thread to change the background
