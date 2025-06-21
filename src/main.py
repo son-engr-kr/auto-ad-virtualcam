@@ -21,6 +21,8 @@ import pyaudio
 
 # Local import (ensure src is on PYTHONPATH or run as module)
 from frame_handler import FrameHandler
+from llm_api_handler import LLMAPIHandler
+import json
 
 class VoiceActivityDetector:
     """Handles voice activity detection using WebRTC VAD.
@@ -92,6 +94,7 @@ class SpeechRecognitionThread(QThread):
     finished_signal = pyqtSignal()
     audio_level_signal = pyqtSignal(float)  # For audio level visualization
     vad_status_signal = pyqtSignal(bool)    # For showing VAD status
+    change_background_signal = pyqtSignal(str)
     
     def __init__(self, recognizer, text_area_callback):
         super().__init__()
@@ -114,6 +117,8 @@ class SpeechRecognitionThread(QThread):
         
         # Initialize PyAudio for direct audio handling
         self.audio = pyaudio.PyAudio()
+        
+        self.llm_api_handler = LLMAPIHandler(json.load(open("api_keys.json"))["google_api_key"])
         
     def run(self):
         """Main execution with VAD-based speech detection."""
@@ -165,6 +170,13 @@ class SpeechRecognitionThread(QThread):
                         try:
                             # Recognize speech
                             recognized_text = self.recognizer.recognize_google(audio)
+
+                            # TODO: send and get result from LLM here
+                            llm_result = self.llm_api_handler.request(recognized_text)
+                            # TODO: signal to camera thread to change the background
+                            self.change_background_signal.emit(llm_result)
+                            
+
                             self.recognized_signal.emit(f"You said: {recognized_text}")
                         except sr.UnknownValueError:
                             self.recognized_signal.emit("Speech detected but could not understand")
@@ -288,6 +300,8 @@ class SpeechRecognitionApp(QMainWindow):
         self.recording_thread.audio_level_signal.connect(self.set_audio_level)
         self.recording_thread.vad_status_signal.connect(self.update_vad_status)
         self.recording_thread.start()
+
+        self.recording_thread.change_background_signal.connect(self.virtual_cam_thread.change_background)
         
         # Start audio level update timer
         self.level_timer.start(50)  # Update every 50ms
@@ -362,6 +376,7 @@ class VirtualCameraThread(QThread):
     """
 
     status_signal = pyqtSignal(str)  # Emit status text for UI
+    # change_background_signal = pyqtSignal(str)
 
     def __init__(self, background_image: str = "likelion_hackathon.png", fps: int = 20):
         super().__init__()
@@ -369,52 +384,49 @@ class VirtualCameraThread(QThread):
         self.fps = fps
         self._running = True
 
-    def run(self):
+        # Open physical webcam
+        self.cap = cv2.VideoCapture(0)
+        if not self.cap.isOpened():
+            self.status_signal.emit("Failed to open webcam")
+            return
+
+        self.width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        self.height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+        self.status_signal.emit(f"Webcam opened {self.width}x{self.height}")
+
+        # Init frame handler and background
+        self.handler = FrameHandler(self.width, self.height)
         try:
-            # Open physical webcam
-            cap = cv2.VideoCapture(0)
-            if not cap.isOpened():
-                self.status_signal.emit("Failed to open webcam")
-                return
+            self.handler.change_background(self.background_image)
+        except Exception:
+            # background may fail; ignore
+            pass
+    def change_background(self, company_name: str):
+        # self.handler.change_background(company_name)
+        print(f"Changing background to {company_name}")
 
-            width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-            height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    def run(self):
+        
 
-            self.status_signal.emit(f"Webcam opened {width}x{height}")
+        # Start virtual camera
+        with pyvirtualcam.Camera(width=self.width, height=self.height, fps=self.fps) as cam:
+            self.status_signal.emit(f"Virtual cam started → {cam.device}")
 
-            # Init frame handler and background
-            handler = FrameHandler(width, height)
-            try:
-                handler.change_background(self.background_image)
-            except Exception:
-                # background may fail; ignore
-                pass
+            while self._running:
+                ret, frame = self.cap.read()
+                if not ret:
+                    self.status_signal.emit("Frame grab failed")
+                    break
 
-            # Start virtual camera
-            with pyvirtualcam.Camera(width=width, height=height, fps=self.fps) as cam:
-                self.status_signal.emit(f"Virtual cam started → {cam.device}")
+                # Convert BGR to RGB for FrameHandler
+                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                processed = self.handler.handle_frame(frame_rgb)
 
-                while self._running:
-                    ret, frame = cap.read()
-                    if not ret:
-                        self.status_signal.emit("Frame grab failed")
-                        break
+                # Send to virtual cam (expects RGB)
+                cam.send(processed)
+                cam.sleep_until_next_frame()
 
-                    # Convert BGR to RGB for FrameHandler
-                    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                    processed = handler.handle_frame(frame_rgb)
-
-                    # Send to virtual cam (expects RGB)
-                    cam.send(processed)
-                    cam.sleep_until_next_frame()
-
-        except Exception as e:
-            self.status_signal.emit(f"VirtualCam error: {e}")
-        finally:
-            try:
-                cap.release()
-            except Exception:
-                pass
 
     def stop(self):
         self._running = False
