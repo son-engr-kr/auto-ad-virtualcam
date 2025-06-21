@@ -2,3 +2,4 @@ numpy
 pyvirtualcam
 opencv-python
 mediapipe
+requests
