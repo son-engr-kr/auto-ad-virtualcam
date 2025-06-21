@@ -1,14 +1,14 @@
 import cv2
 import numpy as np
 import mediapipe as mp
-
+import os
 
 class FrameHandler:
     """Utility class that can extract either the face region or the full person mask
     from a video frame using MediaPipe models.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, width: int, height: int) -> None:
         # Face-mesh model for fine-grained face landmarks
         self.mp_face_mesh = mp.solutions.face_mesh
         self.face_mesh = self.mp_face_mesh.FaceMesh(
@@ -23,6 +23,11 @@ class FrameHandler:
         self.mp_selfie_seg = mp.solutions.selfie_segmentation
         # model_selection=1 → general model (full body incl. hair)
         self.person_seg = self.mp_selfie_seg.SelfieSegmentation(model_selection=1)
+
+        self.width = width
+        self.height = height
+
+        self.background = np.full((self.height, self.width, 3), (0, 255, 0), dtype=np.uint8)  # Green screen background
 
     # ------------------------------------------------------------------ #
     # internal helpers
@@ -116,15 +121,15 @@ class FrameHandler:
         combined_mask = cv2.bitwise_or(face_mask, person_mask)
 
         # Expand mask slightly to preserve some surrounding background.
-        dilate_px = 20  # adjust to taste
+        dilate_px = 3  # adjust to taste
         kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (dilate_px * 2 + 1, dilate_px * 2 + 1))
         combined_mask = cv2.dilate(combined_mask, kernel, iterations=1)
 
         # Compose foreground and green background with smooth edge blending.
-        green_bg = np.full_like(frame, (0, 255, 0))
+        # green_bg = np.full_like(frame, (0, 255, 0))
 
         # Distance-transform feathering via helper.
-        blended = self.blend_smooth_fg_bg(frame, green_bg, combined_mask, feather_px=dilate_px * 2)
+        blended = self.blend_smooth_fg_bg(frame, self.background, combined_mask, feather_px=dilate_px * 2)
         return blended
 
     def blend_smooth_fg_bg(self, fg, bg, binary_mask, feather_px=20):
@@ -157,4 +162,10 @@ class FrameHandler:
     def handle_frame(self, frame: np.ndarray) -> np.ndarray:
         """Default behaviour kept for backward compatibility (face extraction)."""
         return self.make_background(frame)
+
+    def change_background(self, image_path: str) -> None:
+        new_background = cv2.imread(os.path.join("res","company_logos", image_path))
+        new_background = cv2.cvtColor(new_background, cv2.COLOR_BGR2RGB)
+        new_background = cv2.flip(new_background, 1)  # Flip horizontally (left-right)
+        self.background = cv2.resize(new_background, (self.width, self.height))
 
