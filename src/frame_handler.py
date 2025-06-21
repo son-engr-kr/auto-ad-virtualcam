@@ -115,11 +115,16 @@ class FrameHandler:
         # Combine masks to ensure both face and body are kept.
         combined_mask = cv2.bitwise_or(face_mask, person_mask)
 
+        # Expand mask slightly to preserve some surrounding background.
+        dilate_px = 20  # adjust to taste
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (dilate_px * 2 + 1, dilate_px * 2 + 1))
+        combined_mask = cv2.dilate(combined_mask, kernel, iterations=1)
+
         # Compose foreground and green background with smooth edge blending.
         green_bg = np.full_like(frame, (0, 255, 0))
 
         # Distance-transform feathering via helper.
-        blended = self.blend_smooth_fg_bg(frame, green_bg, combined_mask, feather_px=8)
+        blended = self.blend_smooth_fg_bg(frame, green_bg, combined_mask, feather_px=dilate_px * 2)
         return blended
 
     def blend_smooth_fg_bg(self, fg, bg, binary_mask, feather_px=20):
