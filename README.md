@@ -6,6 +6,6 @@ This project aims to develop an AI-powered virtual camera system for Zoom meetin
 
 ```
 py -3.11 -m venv .venv
-.venv\Scripts\activate\
+.venv\Scripts\activate
 pip install -r requirements.txt
 ```
