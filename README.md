@@ -12,6 +12,15 @@ py -3.11 -m venv .venv
 pip install -r requirements.txt
 ```
 
+## Get Google AI API Key
+- https://aistudio.google.com/prompts/new_chat
+put it in the `api_keys.json`
+```
+{
+    "google_api_key": "YOUR API KEY HERE"
+}
+```
+
 ## Install OBS Studio
 - Start virtual camera once and close it. It will set up the virtual camera system on your PC.
 
