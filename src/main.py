@@ -209,7 +209,7 @@ class SpeechRecognitionThread(QThread):
         self.is_running = False
         self.vad.reset()
 
-class SpeechRecognitionApp(QMainWindow):
+class EchoBoardApp(QMainWindow):
     """Enhanced main application window with VAD visualization."""
     
     def __init__(self):
@@ -437,6 +437,6 @@ class VirtualCameraThread(QThread):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    window = SpeechRecognitionApp()
+    window = EchoBoardApp()
     window.show()
     sys.exit(app.exec_())
