@@ -11,3 +11,14 @@ py -3.11 -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
 ```
+
+## Install OBS Studio
+- Start virtual camera once and close it. It will set up the virtual camera system on your PC.
+
+
+## System Requirements
+- Windows 10/11
+- macOS 13 or lower (macOS 14+ not supported)
+- Python 3.11
+- Webcam
+- Microphone
