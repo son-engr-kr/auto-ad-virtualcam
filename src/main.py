@@ -171,10 +171,11 @@ class SpeechRecognitionThread(QThread):
                             # Recognize speech
                             recognized_text = self.recognizer.recognize_google(audio)
 
-                            recognized_text = "I'm a startup founder, and I'm looking for a company to invest in."
+                            # recognized_text = "I'm a startup founder, and I'm looking for a company to invest in."
 
                             # TODO: send and get result from LLM here
                             llm_result = self.llm_api_handler.request(recognized_text)
+                            llm_result = llm_result.strip()
                             # TODO: signal to camera thread to change the background
                             self.change_background_signal.emit(llm_result)
                             
@@ -405,7 +406,7 @@ class VirtualCameraThread(QThread):
             # background may fail; ignore
             pass
     def change_background(self, company_name: str):
-        # self.handler.change_background(company_name)
+        self.handler.change_background(f"{company_name}.png")
         print(f"Changing background to {company_name}")
 
     def run(self):

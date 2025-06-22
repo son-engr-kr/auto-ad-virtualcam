@@ -164,7 +164,16 @@ class FrameHandler:
         return self.make_background(frame)
 
     def change_background(self, image_path: str) -> None:
-        new_background = cv2.imread(os.path.join("res","company_logos", image_path))
+        file_path = os.path.join("res", "company_logos", f"{image_path}")
+        if not os.path.exists(file_path):
+            print(f"Background image not found: {file_path}")
+            return None
+        
+        new_background = cv2.imread(file_path)
+        if new_background is None:
+            print(f"Failed to load background image: {file_path}")
+            return None
+            
         new_background = cv2.cvtColor(new_background, cv2.COLOR_BGR2RGB)
         new_background = cv2.flip(new_background, 1)  # Flip horizontally (left-right)
         self.background = cv2.resize(new_background, (self.width, self.height))
