@@ -112,7 +112,7 @@ class SpeechRecognitionThread(QThread):
             sample_rate=self.sample_rate,
             frame_duration_ms=self.chunk_duration_ms,
             padding_duration_ms=300,
-            aggressiveness=2
+            aggressiveness=0
         )
         
         # Initialize PyAudio for direct audio handling
