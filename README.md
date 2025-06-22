@@ -1,4 +1,4 @@
-# 2025 Dream AI Hackathon
+# 2025 Dream AI Hackathon: EchoBoard
 
 # Scope
 
