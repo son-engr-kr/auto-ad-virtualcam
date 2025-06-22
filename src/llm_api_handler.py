@@ -15,11 +15,8 @@ class LLMAPIHandler:
         company_list = [
                     ("BlendED", "A company focused on blended learning solutions that combine online and offline education."),
                     ("IIElevenLabs", "A cutting-edge AI voice synthesis company known for realistic speech generation."),
-                    ("BIZ_CRUSH", "A platform that helps startups and businesses connect, pitch, and get funding."),
                     ("Glimpse", "A tool that provides instant user behavior insights through short video captures or analytics."),
-                    ("clix", "An adtech company specializing in real-time, personalized digital advertisements."),
                     ("UClone", "A service for creating realistic virtual avatars or deepfake-like video content."),
-                    ("typecast", "A synthetic voice generation service tailored for creators, often used in video production."),
                     ("Codetree", "An online coding platform or IDE designed for collaborative software development."),
                     ("Signaling", "A communication framework or API for real-time audio/video signaling between users."),
                     ("Z_Order", "A company specializing in graphics rendering, 3D ordering, or UI layering solutions.")
